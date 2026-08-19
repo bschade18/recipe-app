@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { db } from "./db.js";
 
 const app = Fastify({
   logger: true,
@@ -7,6 +8,15 @@ const app = Fastify({
 app.get("/health", async () => {
   return {
     status: "healthy",
+  };
+});
+
+app.get("/db-health", async () => {
+  const result = await db.query("SELECT NOW()");
+
+  return {
+    status: "healthy",
+    databaseTime: result.rows[0].now,
   };
 });
 
