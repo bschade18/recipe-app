@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env --import tsx src/server.ts",
+    "dev": "tsx watch --env-file=.env src/server.ts",
     "migrate:create": "node-pg-migrate create",
     "migrate:up": "node --env-file=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate up",
     "migrate:down": "node --env-file=.env ./node_modules/node-pg-migrate/bin/node-pg-migrate down"
