@@ -4,6 +4,11 @@ import { recipeRoutes } from "./routes/recipes.js";
 
 const app = Fastify({
   logger: true,
+  ajv: {
+    customOptions: {
+      coerceTypes: false,
+    },
+  },
 });
 
 app.get("/health", async () => {
