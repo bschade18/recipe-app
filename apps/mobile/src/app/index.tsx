@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "expo-router";
 import { ActivityIndicator, Text, View } from "react-native";
 
 const API_URL = "http://localhost:3000";
@@ -35,6 +36,8 @@ export default function HomeScreen() {
         justifyContent: "center",
       }}
     >
+      <Text>Recipe App</Text>
+      <Link href="/add-recipe">Add Recipe</Link>
       {!status && !error && <ActivityIndicator />}
 
       {status && <Text>API status: {status}</Text>}
