@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { TextInput, Button, ScrollView, StyleSheet } from "react-native";
+import { Text, TextInput, Button, ScrollView, StyleSheet } from "react-native";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { router } from "expo-router";
 
 export default function AddRecipe() {
+  const queryClient = useQueryClient();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prepMinutes, setPrepMinutes] = useState("");
@@ -11,20 +15,16 @@ export default function AddRecipe() {
   const [ingredients, setIngredients] = useState([""]);
   const [steps, setSteps] = useState([""]);
 
-  const handleSubmit = async () => {
-    const payload = {
-      title,
-      description: description || undefined,
-      prepMinutes: prepMinutes ? Number(prepMinutes) : undefined,
-      cookMinutes: cookMinutes ? Number(cookMinutes) : undefined,
-      servings: servings ? Number(servings) : undefined,
-      ingredients: ingredients
-        .map((ingredient) => ingredient.trim())
-        .filter(Boolean),
-      steps: steps.map((step) => step.trim()).filter(Boolean),
-    };
-
-    try {
+  const createRecipeMutation = useMutation({
+    mutationFn: async (payload: {
+      title: string;
+      description?: string;
+      prepMinutes?: number;
+      cookMinutes?: number;
+      servings?: number;
+      ingredients?: string[];
+      steps: string[];
+    }) => {
       const response = await fetch("http://localhost:3000/recipes", {
         method: "POST",
         headers: {
@@ -39,11 +39,29 @@ export default function AddRecipe() {
         return;
       }
 
-      const recipe = await response.json();
-      console.log("Created recipe:", recipe);
-    } catch (error) {
-      console.error("Request failed:", error);
-    }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+
+      router.back();
+    },
+  });
+
+  const handleSubmit = async () => {
+    const payload = {
+      title,
+      description: description || undefined,
+      prepMinutes: prepMinutes ? Number(prepMinutes) : undefined,
+      cookMinutes: cookMinutes ? Number(cookMinutes) : undefined,
+      servings: servings ? Number(servings) : undefined,
+      ingredients: ingredients
+        .map((ingredient) => ingredient.trim())
+        .filter(Boolean),
+      steps: steps.map((step) => step.trim()).filter(Boolean),
+    };
+
+    createRecipeMutation.mutate(payload);
   };
 
   return (
@@ -83,7 +101,7 @@ export default function AddRecipe() {
       />
       {ingredients.map((ingredient, index) => (
         <TextInput
-          key={index}
+          key={ingredient}
           style={styles.input}
           value={ingredient}
           onChangeText={(text) => {
@@ -111,7 +129,15 @@ export default function AddRecipe() {
       ))}
       <Button title="Add Step" onPress={() => setSteps([...steps, ""])} />
 
-      <Button title="Create Recipe" onPress={handleSubmit} />
+      <Button
+        title={createRecipeMutation.isPending ? "Creating..." : "Create Recipe"}
+        onPress={handleSubmit}
+        disabled={createRecipeMutation.isPending}
+      />
+
+      {createRecipeMutation.isError && (
+        <Text>{createRecipeMutation.error.message}</Text>
+      )}
     </ScrollView>
   );
 }
