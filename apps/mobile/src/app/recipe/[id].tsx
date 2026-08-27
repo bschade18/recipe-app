@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, Link } from "expo-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ActivityIndicator, ScrollView, Text, Button } from "react-native";
 
@@ -111,6 +111,15 @@ export default function RecipeDetailScreen() {
         onPress={() => deleteRecipeMutation.mutate()}
         disabled={deleteRecipeMutation.isPending}
       />
+
+      <Link
+        href={{
+          pathname: "/recipe/[id]/edit",
+          params: { id },
+        }}
+      >
+        Edit Recipe
+      </Link>
     </ScrollView>
   );
 }

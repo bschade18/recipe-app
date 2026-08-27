@@ -199,6 +199,56 @@ export async function recipeRoutes(app: FastifyInstance) {
     },
   );
 
+  app.patch("/recipes/:id", async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const body = request.body as {
+      title?: string;
+      description?: string;
+      prepMinutes?: number;
+      cookMinutes?: number;
+      servings?: number;
+      notes?: string;
+    };
+
+    // COALESCE($1, title)
+    // use $1 if it’s not null; otherwise keep the existing title
+    // with this impl can't intentionally clear field by passing NULL
+
+    const result = await db.query(
+      `
+      UPDATE recipes
+      SET 
+        title = COALESCE($1, title),
+        description = COALESCE($2, description),
+        prep_minutes = COALESCE($3, prep_minutes),
+        cook_minutes = COALESCE($4, cook_minutes),
+        servings = COALESCE($5, servings),
+        notes = COALESCE($6, notes),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING id
+      `,
+      [
+        body.title,
+        body.description,
+        body.prepMinutes,
+        body.cookMinutes,
+        body.servings,
+        body.notes,
+        id,
+      ],
+    );
+
+    if (result.rows.length === 0) {
+      return reply.code(404).send({
+        message: "Recipe not found",
+      });
+    }
+
+    return result.rows[0];
+  });
+
   app.delete("/recipes/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
 
