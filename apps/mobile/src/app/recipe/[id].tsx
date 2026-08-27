@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { ActivityIndicator, ScrollView, Text, Button } from "react-native";
 
 const API_URL = "http://localhost:3000";
 
@@ -36,7 +36,32 @@ async function fetchRecipe(id: string): Promise<RecipeDetail> {
 }
 
 export default function RecipeDetailScreen() {
+  const queryClient = useQueryClient();
+
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const deleteRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`${API_URL}/recipes/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete recipe");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["recipes"],
+      });
+
+      queryClient.removeQueries({
+        queryKey: ["recipe", id],
+      });
+
+      router.back();
+    },
+  });
 
   const {
     data: recipe,
@@ -76,6 +101,16 @@ export default function RecipeDetailScreen() {
       {recipe.steps.map((step, index) => (
         <Text key={index}>{step.instruction}</Text>
       ))}
+
+      <Button
+        title={
+          deleteRecipeMutation.isPending
+            ? "Deleting recipe..."
+            : "Delete recipe"
+        }
+        onPress={() => deleteRecipeMutation.mutate()}
+        disabled={deleteRecipeMutation.isPending}
+      />
     </ScrollView>
   );
 }

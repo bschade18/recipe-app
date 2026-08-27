@@ -198,4 +198,25 @@ export async function recipeRoutes(app: FastifyInstance) {
       }
     },
   );
+
+  app.delete("/recipes/:id", async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const result = await db.query(
+      `
+      DELETE from recipes
+      WHERE id = $1
+      RETURNING id
+      `,
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return reply.code(404).send({
+        message: "Recipe not found",
+      });
+    }
+
+    return reply.code(204).send();
+  });
 }
