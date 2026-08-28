@@ -199,55 +199,165 @@ export async function recipeRoutes(app: FastifyInstance) {
     },
   );
 
-  app.patch("/recipes/:id", async (request, reply) => {
-    const { id } = request.params as { id: string };
+  app.patch(
+    "/recipes/:id",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              minLength: 1,
+            },
+            description: {
+              type: "string",
+            },
+            prepMinutes: {
+              type: "integer",
+              minimum: 0,
+            },
+            cookMinutes: {
+              type: "integer",
+              minimum: 0,
+            },
+            servings: {
+              type: "integer",
+              minimum: 1,
+            },
+            notes: {
+              type: "string",
+            },
+            ingredients: {
+              type: "array",
+              items: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+            steps: {
+              type: "array",
+              items: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
 
-    const body = request.body as {
-      title?: string;
-      description?: string;
-      prepMinutes?: number;
-      cookMinutes?: number;
-      servings?: number;
-      notes?: string;
-    };
+      const body = request.body as {
+        title?: string;
+        description?: string;
+        prepMinutes?: number;
+        cookMinutes?: number;
+        servings?: number;
+        notes?: string;
+        ingredients?: string[];
+        steps?: string[];
+      };
 
-    // COALESCE($1, title)
-    // use $1 if it’s not null; otherwise keep the existing title
-    // with this impl can't intentionally clear field by passing NULL
+      const client = await db.connect();
 
-    const result = await db.query(
-      `
-      UPDATE recipes
-      SET 
-        title = COALESCE($1, title),
-        description = COALESCE($2, description),
-        prep_minutes = COALESCE($3, prep_minutes),
-        cook_minutes = COALESCE($4, cook_minutes),
-        servings = COALESCE($5, servings),
-        notes = COALESCE($6, notes),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
-      RETURNING id
-      `,
-      [
-        body.title,
-        body.description,
-        body.prepMinutes,
-        body.cookMinutes,
-        body.servings,
-        body.notes,
-        id,
-      ],
-    );
+      try {
+        await client.query("BEGIN");
 
-    if (result.rows.length === 0) {
-      return reply.code(404).send({
-        message: "Recipe not found",
-      });
-    }
+        const recipeResult = await client.query(
+          `
+          UPDATE recipes
+          SET
+            title = COALESCE($1, title),
+            description = COALESCE($2, description),
+            prep_minutes = COALESCE($3, prep_minutes),
+            cook_minutes = COALESCE($4, cook_minutes),
+            servings = COALESCE($5, servings),
+            notes = COALESCE($6, notes),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $7
+          RETURNING *
+        `,
+          [
+            body.title,
+            body.description,
+            body.prepMinutes,
+            body.cookMinutes,
+            body.servings,
+            body.notes,
+            id,
+          ],
+        );
 
-    return result.rows[0];
-  });
+        if (recipeResult.rows.length === 0) {
+          await client.query("ROLLBACK");
+
+          return reply.code(404).send({
+            message: "Recipe not found",
+          });
+        }
+
+        if (body.ingredients) {
+          await client.query(
+            `
+            DELETE FROM recipe_ingredients
+            WHERE recipe_id = $1
+          `,
+            [id],
+          );
+
+          for (const [index, ingredient] of body.ingredients.entries()) {
+            await client.query(
+              `
+              INSERT INTO recipe_ingredients (
+                recipe_id,
+                position,
+                text
+              )
+              VALUES ($1, $2, $3)
+            `,
+              [id, index + 1, ingredient],
+            );
+          }
+        }
+
+        if (body.steps) {
+          await client.query(
+            `
+            DELETE FROM recipe_steps
+            WHERE recipe_id = $1
+          `,
+            [id],
+          );
+
+          for (const [index, step] of body.steps.entries()) {
+            await client.query(
+              `
+              INSERT INTO recipe_steps (
+                recipe_id,
+                position,
+                instruction
+              )
+              VALUES ($1, $2, $3)
+            `,
+              [id, index + 1, step],
+            );
+          }
+        }
+
+        await client.query("COMMIT");
+
+        return recipeResult.rows[0];
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+  );
 
   app.delete("/recipes/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
