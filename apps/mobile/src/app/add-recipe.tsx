@@ -1,19 +1,22 @@
 import { useState } from "react";
-import { Text, TextInput, Button, ScrollView, StyleSheet } from "react-native";
+import { Text, ScrollView, StyleSheet } from "react-native";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
+
+import { RecipeForm } from "@/components/RecipeForm";
 
 export default function AddRecipe() {
   const queryClient = useQueryClient();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [prepMinutes, setPrepMinutes] = useState("");
-  const [cookMinutes, setCookMinutes] = useState("");
-  const [servings, setServings] = useState("");
-
-  const [ingredients, setIngredients] = useState([""]);
-  const [steps, setSteps] = useState([""]);
+  const [formValues, setFormValues] = useState({
+    title: "",
+    description: "",
+    prepMinutes: "",
+    cookMinutes: "",
+    servings: "",
+    ingredients: [""],
+    steps: [""],
+  });
 
   const createRecipeMutation = useMutation({
     mutationFn: async (payload: {
@@ -49,6 +52,16 @@ export default function AddRecipe() {
   });
 
   const handleSubmit = async () => {
+    const {
+      title,
+      description,
+      prepMinutes,
+      cookMinutes,
+      servings,
+      ingredients,
+      steps,
+    } = formValues;
+
     const payload = {
       title,
       description: description || undefined,
@@ -66,73 +79,14 @@ export default function AddRecipe() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <TextInput
-        style={styles.input}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Title"
-      />
-      <TextInput
-        style={styles.input}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Description"
-      />
-      <TextInput
-        style={styles.input}
-        value={prepMinutes}
-        onChangeText={setPrepMinutes}
-        placeholder="Prep Minutes"
-        keyboardType="number-pad"
-      />
-      <TextInput
-        style={styles.input}
-        value={cookMinutes}
-        onChangeText={setCookMinutes}
-        placeholder="Cook Minutes"
-        keyboardType="number-pad"
-      />
-      <TextInput
-        style={styles.input}
-        value={servings}
-        onChangeText={setServings}
-        placeholder="Servings"
-        keyboardType="number-pad"
-      />
-      {ingredients.map((ingredient, index) => (
-        <TextInput
-          key={ingredient}
-          style={styles.input}
-          value={ingredient}
-          onChangeText={(text) => {
-            const updatedIngredients = [...ingredients];
-            updatedIngredients[index] = text;
-            setIngredients(updatedIngredients);
-          }}
-        />
-      ))}
-      <Button
-        title="Add Ingredient"
-        onPress={() => setIngredients([...ingredients, ""])}
-      />
-      {steps.map((step, index) => (
-        <TextInput
-          key={index}
-          style={styles.input}
-          value={step}
-          onChangeText={(text) => {
-            const updatedSteps = [...steps];
-            updatedSteps[index] = text;
-            setSteps(updatedSteps);
-          }}
-        />
-      ))}
-      <Button title="Add Step" onPress={() => setSteps([...steps, ""])} />
-
-      <Button
-        title={createRecipeMutation.isPending ? "Creating..." : "Create Recipe"}
-        onPress={handleSubmit}
-        disabled={createRecipeMutation.isPending}
+      <RecipeForm
+        values={formValues}
+        onChange={setFormValues}
+        onSubmit={handleSubmit}
+        submitLabel={
+          createRecipeMutation.isPending ? "Creating..." : "Create Recipe"
+        }
+        isSubmitting={createRecipeMutation.isPending}
       />
 
       {createRecipeMutation.isError && (
