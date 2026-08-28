@@ -69,46 +69,55 @@ export default function HomeScreen() {
         </Link>
       </View>
 
-      <View style={styles.recipeList}>
-        {recipes?.map((recipe) => (
-          <Link
-            key={recipe.id}
-            href={{
-              pathname: "/recipe/[id]",
-              params: { id: recipe.id },
-            }}
-            asChild
-          >
-            <Pressable style={styles.recipeCard}>
-              <Text style={styles.recipeTitle}>{recipe.title}</Text>
+      {recipes?.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No recipes yet</Text>
+          <Text style={styles.emptyText}>
+            Add your first recipe to get started.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.recipeList}>
+          {recipes?.map((recipe) => (
+            <Link
+              key={recipe.id}
+              href={{
+                pathname: "/recipe/[id]",
+                params: { id: recipe.id },
+              }}
+              asChild
+            >
+              <Pressable style={styles.recipeCard}>
+                <Text style={styles.recipeTitle}>{recipe.title}</Text>
 
-              {recipe.description && (
-                <Text style={styles.description} numberOfLines={2}>
-                  {recipe.description}
-                </Text>
-              )}
-
-              <View style={styles.metaRow}>
-                {recipe.prep_minutes !== null && (
-                  <Text style={styles.meta}>
-                    {recipe.prep_minutes} min prep
+                {recipe.description && (
+                  <Text style={styles.description} numberOfLines={2}>
+                    {recipe.description}
                   </Text>
                 )}
 
-                {recipe.cook_minutes !== null && (
-                  <Text style={styles.meta}>
-                    {recipe.cook_minutes} min cook
-                  </Text>
-                )}
+                <View style={styles.metaRow}>
+                  {recipe.prep_minutes !== null && (
+                    <Text style={styles.meta}>
+                      {recipe.prep_minutes} min prep
+                    </Text>
+                  )}
 
-                {recipe.servings !== null && (
-                  <Text style={styles.meta}>{recipe.servings} servings</Text>
-                )}
-              </View>
-            </Pressable>
-          </Link>
-        ))}
-      </View>
+                  {recipe.cook_minutes !== null && (
+                    <Text style={styles.meta}>
+                      {recipe.cook_minutes} min cook
+                    </Text>
+                  )}
+
+                  {recipe.servings !== null && (
+                    <Text style={styles.meta}>{recipe.servings} servings</Text>
+                  )}
+                </View>
+              </Pressable>
+            </Link>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -181,6 +190,22 @@ const styles = StyleSheet.create({
 
   meta: {
     fontSize: 13,
+    color: "#777777",
+  },
+
+  emptyState: {
+    paddingVertical: 60,
+    alignItems: "center",
+    gap: 8,
+  },
+
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+
+  emptyText: {
+    fontSize: 15,
     color: "#777777",
   },
 });
