@@ -20,6 +20,11 @@ export default function TabLayout() {
         <Stack>
           <Stack.Screen name="index" options={{ title: "Recipes" }} />
           <Stack.Screen name="add-recipe" options={{ title: "Add Recipe" }} />
+          <Stack.Screen name="recipe/[id]" options={{ title: "Recipe" }} />
+          <Stack.Screen
+            name="recipe/[id]/edit"
+            options={{ title: "Edit Recipe" }}
+          />
         </Stack>
         {/* <AppTabs /> */}
       </ThemeProvider>
