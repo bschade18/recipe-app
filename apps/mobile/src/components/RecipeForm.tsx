@@ -1,4 +1,4 @@
-import { Button, ScrollView, TextInput } from "react-native";
+import { Button, ScrollView, TextInput, View } from "react-native";
 
 type RecipeFormValues = {
   title: string;
@@ -82,17 +82,32 @@ export function RecipeForm({
       />
 
       {values.ingredients.map((ingredient, index) => (
-        <TextInput
-          key={index}
-          value={ingredient}
-          onChangeText={(text) => {
-            const ingredients = [...values.ingredients];
-            ingredients[index] = text;
+        <View key={index}>
+          <TextInput
+            value={ingredient}
+            onChangeText={(text) => {
+              const ingredients = [...values.ingredients];
+              ingredients[index] = text;
 
-            onChange({ ...values, ingredients });
-          }}
-          placeholder={`Ingredient ${index + 1}`}
-        />
+              onChange({ ...values, ingredients });
+            }}
+            placeholder={`Ingredient ${index + 1}`}
+          />
+
+          <Button
+            title="Remove"
+            onPress={() => {
+              const ingredients = values.ingredients.filter(
+                (_, ingredientIndex) => ingredientIndex !== index,
+              );
+
+              onChange({
+                ...values,
+                ingredients,
+              });
+            }}
+          />
+        </View>
       ))}
       <Button
         title="Add Ingredient"
@@ -104,20 +119,35 @@ export function RecipeForm({
         }
       />
       {values.steps.map((step, index) => (
-        <TextInput
-          key={index}
-          value={step}
-          onChangeText={(text) => {
-            const steps = [...values.steps];
-            steps[index] = text;
+        <View key={index}>
+          <TextInput
+            value={step}
+            onChangeText={(text) => {
+              const steps = [...values.steps];
+              steps[index] = text;
 
-            onChange({
-              ...values,
-              steps,
-            });
-          }}
-          placeholder={`Step ${index + 1}`}
-        />
+              onChange({
+                ...values,
+                steps,
+              });
+            }}
+            placeholder={`Step ${index + 1}`}
+          />
+
+          <Button
+            title="Remove"
+            onPress={() => {
+              const steps = values.steps.filter(
+                (_, stepIndex) => stepIndex !== index,
+              );
+
+              onChange({
+                ...values,
+                steps,
+              });
+            }}
+          />
+        </View>
       ))}
 
       <Button
