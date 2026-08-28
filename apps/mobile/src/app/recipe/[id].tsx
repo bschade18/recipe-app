@@ -56,6 +56,36 @@ export default function RecipeDetailScreen() {
     queryFn: () => fetchRecipe(id),
   });
 
+  const favoriteMutation = useMutation({
+    mutationFn: async (isFavorite: boolean) => {
+      const response = await fetch(`${API_URL}/recipes/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isFavorite,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update favorite");
+      }
+
+      return response.json();
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["recipe", id],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["recipes"],
+      });
+    },
+  });
+
   const deleteRecipeMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`${API_URL}/recipes/${id}`, {
@@ -114,6 +144,11 @@ export default function RecipeDetailScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{recipe.title}</Text>
+        <Pressable onPress={() => favoriteMutation.mutate(!recipe.is_favorite)}>
+          <Text>
+            {recipe.is_favorite ? "★ Favorite" : "☆ Add to Favorites"}
+          </Text>
+        </Pressable>
 
         {recipe.description && (
           <Text style={styles.description}>{recipe.description}</Text>

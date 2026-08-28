@@ -228,6 +228,9 @@ export async function recipeRoutes(app: FastifyInstance) {
             notes: {
               type: "string",
             },
+            isFavorite: {
+              type: "boolean",
+            },
             ingredients: {
               type: "array",
               items: {
@@ -257,6 +260,7 @@ export async function recipeRoutes(app: FastifyInstance) {
         cookMinutes?: number;
         servings?: number;
         notes?: string;
+        isFavorite?: boolean;
         ingredients?: string[];
         steps?: string[];
       };
@@ -276,8 +280,9 @@ export async function recipeRoutes(app: FastifyInstance) {
             cook_minutes = COALESCE($4, cook_minutes),
             servings = COALESCE($5, servings),
             notes = COALESCE($6, notes),
+            is_favorite = COALESCE($7, is_favorite),
             updated_at = CURRENT_TIMESTAMP
-          WHERE id = $7
+          WHERE id = $8
           RETURNING *
         `,
           [
@@ -287,6 +292,7 @@ export async function recipeRoutes(app: FastifyInstance) {
             body.cookMinutes,
             body.servings,
             body.notes,
+            body.isFavorite,
             id,
           ],
         );
