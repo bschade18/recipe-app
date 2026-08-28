@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  TextInput,
 } from "react-native";
 
 const API_URL = "http://localhost:3000";
@@ -32,6 +34,8 @@ async function fetchRecipes(): Promise<Recipe[]> {
 }
 
 export default function HomeScreen() {
+  const [search, setSearch] = useState("");
+
   const {
     data: recipes,
     isLoading,
@@ -57,28 +61,58 @@ export default function HomeScreen() {
     );
   }
 
+  const sortedRecipes = [...(recipes ?? [])].sort(
+    (a, b) => Number(b.is_favorite) - Number(a.is_favorite),
+  );
+
+  const filteredRecipes = sortedRecipes.filter((recipe) => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      recipe.title.toLowerCase().includes(query) ||
+      recipe.description?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Recipes</Text>
+        <View style={styles.headerActions}>
+          <Link href="/add-recipe" asChild>
+            <Pressable style={styles.addButton}>
+              <Text style={styles.addButtonText}>+ Add Recipe</Text>
+            </Pressable>
+          </Link>
+        </View>
 
-        <Link href="/add-recipe" asChild>
-          <Pressable style={styles.addButton}>
-            <Text style={styles.addButtonText}>+ Add Recipe</Text>
-          </Pressable>
-        </Link>
+        <TextInput
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search recipes..."
+          autoCapitalize="none"
+        />
       </View>
 
-      {recipes?.length === 0 ? (
+      {sortedRecipes?.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No recipes yet</Text>
           <Text style={styles.emptyText}>
             Add your first recipe to get started.
           </Text>
         </View>
+      ) : filteredRecipes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No recipes found</Text>
+          <Text style={styles.emptyText}>Try a different search.</Text>
+        </View>
       ) : (
         <View style={styles.recipeList}>
-          {recipes?.map((recipe) => (
+          {filteredRecipes?.map((recipe) => (
             <Link
               key={recipe.id}
               href={{
@@ -88,7 +122,13 @@ export default function HomeScreen() {
               asChild
             >
               <Pressable style={styles.recipeCard}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <View style={styles.recipeTitleRow}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+
+                  {recipe.is_favorite && (
+                    <Text style={styles.favoriteIcon}>★</Text>
+                  )}
+                </View>
 
                 {recipe.description && (
                   <Text style={styles.description} numberOfLines={2}>
@@ -136,14 +176,23 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    gap: 14,
   },
 
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
+  headerActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+
+  searchInput: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#e2e2e2",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: "#ffffff",
   },
 
   addButton: {
@@ -191,6 +240,17 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 13,
     color: "#777777",
+  },
+
+  recipeTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+
+  favoriteIcon: {
+    fontSize: 20,
   },
 
   emptyState: {
