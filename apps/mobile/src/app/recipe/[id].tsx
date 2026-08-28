@@ -1,6 +1,12 @@
 import { useLocalSearchParams, router, Link } from "expo-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { ActivityIndicator, ScrollView, Text, Button } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  Button,
+  Alert,
+} from "react-native";
 
 const API_URL = "http://localhost:3000";
 
@@ -63,6 +69,20 @@ export default function RecipeDetailScreen() {
     },
   });
 
+  const handleDelete = () => {
+    Alert.alert("Delete recipe?", "This action cannot be undone", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => deleteRecipeMutation.mutate(),
+      },
+    ]);
+  };
+
   const {
     data: recipe,
     isLoading,
@@ -108,7 +128,7 @@ export default function RecipeDetailScreen() {
             ? "Deleting recipe..."
             : "Delete recipe"
         }
-        onPress={() => deleteRecipeMutation.mutate()}
+        onPress={handleDelete}
         disabled={deleteRecipeMutation.isPending}
       />
 
