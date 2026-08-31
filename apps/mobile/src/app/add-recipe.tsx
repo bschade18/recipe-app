@@ -14,6 +14,7 @@ export default function AddRecipe() {
     prepMinutes: "",
     cookMinutes: "",
     servings: "",
+    notes: "",
     ingredients: [""],
     steps: [""],
   });
@@ -58,6 +59,7 @@ export default function AddRecipe() {
       prepMinutes,
       cookMinutes,
       servings,
+      notes,
       ingredients,
       steps,
     } = formValues;
@@ -68,6 +70,7 @@ export default function AddRecipe() {
       prepMinutes: prepMinutes ? Number(prepMinutes) : undefined,
       cookMinutes: cookMinutes ? Number(cookMinutes) : undefined,
       servings: servings ? Number(servings) : undefined,
+      notes: formValues.notes || undefined,
       ingredients: ingredients
         .map((ingredient) => ingredient.trim())
         .filter(Boolean),

@@ -47,6 +47,7 @@ export default function EditRecipeScreen() {
     prepMinutes: "",
     cookMinutes: "",
     servings: "",
+    notes: "",
     ingredients: [""],
     steps: [""],
   });
@@ -59,6 +60,7 @@ export default function EditRecipeScreen() {
         prepMinutes,
         cookMinutes,
         servings,
+        notes,
         ingredients,
         steps,
       } = formValues;
@@ -69,6 +71,7 @@ export default function EditRecipeScreen() {
         prepMinutes: prepMinutes ? Number(prepMinutes) : undefined,
         cookMinutes: cookMinutes ? Number(cookMinutes) : undefined,
         servings: servings ? Number(servings) : undefined,
+        notes: notes || undefined,
         ingredients: ingredients
           .map((ingredient) => ingredient.trim())
           .filter(Boolean),
@@ -120,6 +123,7 @@ export default function EditRecipeScreen() {
       prepMinutes: recipe.prep_minutes?.toString() ?? "",
       cookMinutes: recipe.cook_minutes?.toString() ?? "",
       servings: recipe.servings?.toString() ?? "",
+      notes: recipe.notes ?? "",
       ingredients: recipe.ingredients.map((ingredient) => ingredient.text),
       steps: recipe.steps.map((step) => step.instruction),
     });

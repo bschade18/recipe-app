@@ -13,6 +13,7 @@ type RecipeFormValues = {
   prepMinutes: string;
   cookMinutes: string;
   servings: string;
+  notes: string;
   ingredients: string[];
   steps: string[];
 };
@@ -219,6 +220,24 @@ export function RecipeForm({
         >
           <Text style={styles.secondaryButtonText}>+ Add Step</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notes</Text>
+
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          value={values.notes}
+          onChangeText={(notes) =>
+            onChange({
+              ...values,
+              notes,
+            })
+          }
+          placeholder="Add any notes..."
+          multiline
+          textAlignVertical="top"
+        />
       </View>
 
       <Pressable
