@@ -11,7 +11,7 @@ import {
   TextInput,
 } from "react-native";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "@/config/api";
 
 type Recipe = {
   id: string;
@@ -33,6 +33,8 @@ async function fetchRecipes(): Promise<Recipe[]> {
   return response.json();
 }
 
+console.log("API URL:", API_URL);
+
 export default function HomeScreen() {
   const [search, setSearch] = useState("");
 
@@ -40,10 +42,13 @@ export default function HomeScreen() {
     data: recipes,
     isLoading,
     isError,
+    error,
   } = useQuery({
     queryKey: ["recipes"],
     queryFn: fetchRecipes,
   });
+
+  console.log("Recipe query error:", error);
 
   if (isLoading) {
     return (
@@ -97,6 +102,11 @@ export default function HomeScreen() {
           autoCapitalize="none"
         />
       </View>
+      <Link href="/import-url" asChild>
+        <Pressable style={styles.importButton}>
+          <Text style={styles.importButtonText}>Import from URL</Text>
+        </Pressable>
+      </Link>
 
       {sortedRecipes?.length === 0 ? (
         <View style={styles.emptyState}>
@@ -193,6 +203,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: "#ffffff",
+  },
+
+  importButton: {
+    borderWidth: 1,
+    borderColor: "#171717",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+
+  importButtonText: {
+    color: "#171717",
+    fontWeight: "700",
   },
 
   addButton: {

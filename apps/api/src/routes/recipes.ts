@@ -1,5 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
+import * as cheerio from "cheerio";
+
+import {
+  cleanText,
+  parseDurationMinutes,
+  parseServings,
+} from "../utils/recipe-import.js";
 
 export async function recipeRoutes(app: FastifyInstance) {
   app.get("/recipes", async () => {
@@ -385,4 +392,104 @@ export async function recipeRoutes(app: FastifyInstance) {
 
     return reply.code(204).send();
   });
+
+  app.post(
+    "/recipes/import-url",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["url"],
+          properties: {
+            url: {
+              type: "string",
+              minLength: 1,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { url } = request.body as { url: string };
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        return reply.code(400).send({
+          message: "Failed to fetch recipe URL",
+        });
+      }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      const jsonLdBlocks = $('script[type="application/ld+json"]')
+        .map((_, element) => $(element).html())
+        .get();
+
+      let recipeData: any = null;
+
+      for (const block of jsonLdBlocks) {
+        if (!block) continue;
+
+        try {
+          const parsed = JSON.parse(block);
+
+          const candidates = Array.isArray(parsed)
+            ? parsed
+            : parsed["@graph"]
+              ? parsed["@graph"]
+              : [parsed];
+
+          recipeData = candidates.find(
+            (item: any) =>
+              item["@type"] === "Recipe" || item["@type"]?.includes?.("Recipe"),
+          );
+
+          if (recipeData) {
+            break;
+          }
+        } catch {
+          // ignore invalid JSON-LD blocks
+        }
+      }
+
+      if (!recipeData) {
+        return reply.code(422).send({
+          message: "No recipe data found on this page",
+        });
+      }
+
+      console.log("recipeYield:", recipeData.recipeYield);
+
+      const ingredients = (recipeData.recipeIngredient ?? []).map(
+        (ingredient: string) => cleanText(ingredient),
+      );
+
+      const steps = Array.isArray(recipeData.recipeInstructions)
+        ? recipeData.recipeInstructions
+            .map((step: any) => {
+              const text = typeof step === "string" ? step : (step.text ?? "");
+
+              return cleanText(text);
+            })
+            .filter(Boolean)
+        : [];
+
+      const prepMinutes = parseDurationMinutes(recipeData.prepTime);
+      const cookMinutes = parseDurationMinutes(recipeData.cookTime);
+      const servings = parseServings(recipeData.recipeYield);
+
+      return {
+        title: cleanText(recipeData.name ?? ""),
+        description: cleanText(recipeData.description ?? ""),
+        prepMinutes,
+        cookMinutes,
+        servings,
+        ingredients,
+        steps,
+      };
+    },
+  );
 }

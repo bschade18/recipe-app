@@ -5,7 +5,7 @@ import { ActivityIndicator, Button, ScrollView, Text } from "react-native";
 
 import { RecipeForm } from "@/components/RecipeForm";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "@/config/api";
 
 type RecipeDetail = {
   id: string;
@@ -90,12 +90,12 @@ export default function EditRecipeScreen() {
         throw new Error("Failed to update recipe");
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: ["recipes"],
       });
 
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ["recipe", id],
       });
 

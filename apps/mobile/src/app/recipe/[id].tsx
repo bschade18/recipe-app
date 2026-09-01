@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "@/config/api";
 
 type RecipeDetail = {
   id: string;

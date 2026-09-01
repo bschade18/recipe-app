@@ -34,7 +34,11 @@ export function RecipeForm({
   isSubmitting = false,
 }: RecipeFormProps) {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={styles.container}
+    >
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recipe Details</Text>
 

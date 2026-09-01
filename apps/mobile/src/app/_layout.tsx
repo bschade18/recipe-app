@@ -25,6 +25,12 @@ export default function TabLayout() {
             name="recipe/[id]/edit"
             options={{ title: "Edit Recipe" }}
           />
+          <Stack.Screen
+            name="import-url"
+            options={{
+              title: "Import Recipe",
+            }}
+          />
         </Stack>
         {/* <AppTabs /> */}
       </ThemeProvider>
