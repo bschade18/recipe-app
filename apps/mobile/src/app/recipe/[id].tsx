@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Linking,
 } from "react-native";
 
 import { API_URL } from "@/config/api";
@@ -31,6 +32,7 @@ type RecipeDetail = {
     position: number;
     instruction: string;
   }[];
+  source_url: string | null;
 };
 
 async function fetchRecipe(id: string): Promise<RecipeDetail> {
@@ -153,6 +155,11 @@ export default function RecipeDetailScreen() {
         {recipe.description && (
           <Text style={styles.description}>{recipe.description}</Text>
         )}
+        {recipe.source_url && (
+          <Pressable onPress={() => Linking.openURL(recipe.source_url!)}>
+            <Text style={styles.sourceLink}>View Original Recipe</Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.metaCard}>
@@ -263,6 +270,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
     color: "#555555",
+  },
+
+  sourceLink: {
+    fontSize: 15,
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 
   metaCard: {

@@ -44,7 +44,8 @@ export async function recipeRoutes(app: FastifyInstance) {
         notes,
         is_favorite,
         created_at,
-        updated_at
+        updated_at,
+        source_url
       FROM recipes
       WHERE id = $1
     `,
@@ -118,6 +119,9 @@ export async function recipeRoutes(app: FastifyInstance) {
                 minLength: 1,
               },
             },
+            sourceUrl: {
+              type: "string",
+            },
           },
 
           additionalProperties: false,
@@ -134,6 +138,7 @@ export async function recipeRoutes(app: FastifyInstance) {
         notes?: string;
         ingredients?: string[];
         steps?: string[];
+        sourceUrl?: string;
       };
 
       const client = await db.connect();
@@ -149,9 +154,10 @@ export async function recipeRoutes(app: FastifyInstance) {
         prep_minutes,
         cook_minutes,
         servings,
-        notes
+        notes,
+        source_url
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `,
           [
@@ -161,6 +167,7 @@ export async function recipeRoutes(app: FastifyInstance) {
             body.cookMinutes ?? null,
             body.servings ?? null,
             body.notes ?? null,
+            body.sourceUrl ?? null,
           ],
         );
 

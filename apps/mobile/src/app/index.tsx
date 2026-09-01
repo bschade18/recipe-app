@@ -48,8 +48,6 @@ export default function HomeScreen() {
     queryFn: fetchRecipes,
   });
 
-  console.log("Recipe query error:", error);
-
   if (isLoading) {
     return (
       <View style={styles.centered}>

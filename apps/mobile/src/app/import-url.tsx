@@ -90,6 +90,7 @@ export default function ImportUrlScreen() {
           .map((ingredient) => ingredient.trim())
           .filter(Boolean),
         steps: values.steps.map((step) => step.trim()).filter(Boolean),
+        sourceUrl: url,
       };
 
       const response = await fetch(`${API_URL}/recipes`, {
