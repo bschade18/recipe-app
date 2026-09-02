@@ -8,6 +8,16 @@ import {
   parseServings,
 } from "../utils/recipe-import.js";
 
+type ImportedRecipe = {
+  title: string;
+  description: string;
+  prepMinutes?: number;
+  cookMinutes?: number;
+  servings?: number;
+  ingredients: string[];
+  steps: string[];
+};
+
 export async function recipeRoutes(app: FastifyInstance) {
   app.get("/recipes", async () => {
     const result = await db.query(`
@@ -410,7 +420,7 @@ export async function recipeRoutes(app: FastifyInstance) {
           properties: {
             url: {
               type: "string",
-              minLength: 1,
+              format: "uri",
             },
           },
           additionalProperties: false,
@@ -420,17 +430,25 @@ export async function recipeRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { url } = request.body as { url: string };
 
-      // Identify our backend fetch as a browser-compatible client to improve
-      // compatibility with recipe sites that may block generic server requests.
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; RecipeApp/1.0)",
-        },
-      });
+      let response: Response;
+
+      try {
+        // Identify our backend fetch as a browser-compatible client to improve
+        // compatibility with recipe sites that may block generic server requests.
+        response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; RecipeApp/1.0)",
+          },
+        });
+      } catch {
+        return reply.code(502).send({
+          message: "Could not reach the recipe website",
+        });
+      }
 
       if (!response.ok) {
-        return reply.code(400).send({
-          message: "Failed to fetch recipe URL",
+        return reply.code(502).send({
+          message: `Recipe website returned ${response.status}`,
         });
       }
 
@@ -474,8 +492,6 @@ export async function recipeRoutes(app: FastifyInstance) {
         });
       }
 
-      console.log("recipeYield:", recipeData.recipeYield);
-
       const ingredients = (recipeData.recipeIngredient ?? []).map(
         (ingredient: string) => cleanText(ingredient),
       );
@@ -494,15 +510,17 @@ export async function recipeRoutes(app: FastifyInstance) {
       const cookMinutes = parseDurationMinutes(recipeData.cookTime);
       const servings = parseServings(recipeData.recipeYield);
 
-      return {
+      const importedRecipe: ImportedRecipe = {
         title: cleanText(recipeData.name ?? ""),
         description: cleanText(recipeData.description ?? ""),
-        prepMinutes,
-        cookMinutes,
-        servings,
         ingredients,
         steps,
+        ...(prepMinutes !== undefined && { prepMinutes }),
+        ...(cookMinutes !== undefined && { cookMinutes }),
+        ...(servings !== undefined && { servings }),
       };
+
+      return importedRecipe;
     },
   );
 }
