@@ -6,6 +6,7 @@ import {
   cleanText,
   parseDurationMinutes,
   parseServings,
+  validateRecipeUrl,
 } from "../utils/recipe-import.js";
 
 type ImportedRecipe = {
@@ -430,12 +431,23 @@ export async function recipeRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { url } = request.body as { url: string };
 
+      let validatedUrl: URL;
+
+      try {
+        validatedUrl = await validateRecipeUrl(url);
+      } catch (error) {
+        return reply.code(400).send({
+          message:
+            error instanceof Error ? error.message : "Invalid recipe URL",
+        });
+      }
+
       let response: Response;
 
       try {
         // Identify our backend fetch as a browser-compatible client to improve
         // compatibility with recipe sites that may block generic server requests.
-        response = await fetch(url, {
+        response = await fetch(validatedUrl, {
           headers: {
             "User-Agent": "Mozilla/5.0 (compatible; RecipeApp/1.0)",
           },
