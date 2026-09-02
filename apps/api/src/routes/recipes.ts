@@ -420,7 +420,13 @@ export async function recipeRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { url } = request.body as { url: string };
 
-      const response = await fetch(url);
+      // Identify our backend fetch as a browser-compatible client to improve
+      // compatibility with recipe sites that may block generic server requests.
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; RecipeApp/1.0)",
+        },
+      });
 
       if (!response.ok) {
         return reply.code(400).send({
