@@ -37,12 +37,12 @@ console.log("API URL:", API_URL);
 
 export default function HomeScreen() {
   const [search, setSearch] = useState("");
+  const [recipeView, setRecipeView] = useState<"all" | "favorites">("all");
 
   const {
     data: recipes,
     isLoading,
     isError,
-    error,
   } = useQuery({
     queryKey: ["recipes"],
     queryFn: fetchRecipes,
@@ -68,9 +68,11 @@ export default function HomeScreen() {
     (a, b) => Number(b.is_favorite) - Number(a.is_favorite),
   );
 
-  const filteredRecipes = sortedRecipes.filter((recipe) => {
-    const query = search.trim().toLowerCase();
+  const favoriteRecipes = sortedRecipes.filter((recipe) => recipe.is_favorite);
+  const visibleRecipes = recipeView === "favorites" ? favoriteRecipes : sortedRecipes;
+  const query = search.trim().toLowerCase();
 
+  const filteredRecipes = visibleRecipes.filter((recipe) => {
     if (!query) {
       return true;
     }
@@ -82,7 +84,10 @@ export default function HomeScreen() {
   });
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
         <View style={styles.headerActions}>
           <Link href="/add-recipe" asChild>
@@ -92,11 +97,44 @@ export default function HomeScreen() {
           </Link>
         </View>
 
+        <View style={styles.viewSelector} accessibilityRole="tablist">
+          {(["all", "favorites"] as const).map((view) => (
+            <Pressable
+              key={view}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: recipeView === view }}
+              onPress={() => setRecipeView(view)}
+              style={[
+                styles.viewButton,
+                recipeView === view && styles.selectedViewButton,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.viewButtonText,
+                  recipeView === view && styles.selectedViewButtonText,
+                ]}
+              >
+                {view === "all"
+                  ? `All Recipes (${sortedRecipes.length})`
+                  : `Favorites (${favoriteRecipes.length})`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={styles.viewDescription}>
+          {recipeView === "favorites"
+            ? "Your keepers — recipes worth making again."
+            : "Everything you’ve saved, ready to try or make again."}
+        </Text>
+
         <TextInput
           style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
-          placeholder="Search recipes..."
+          placeholder={recipeView === "favorites" ? "Search favorites..." : "Search recipes..."}
+          accessibilityLabel={recipeView === "favorites" ? "Search favorites" : "Search recipes"}
           autoCapitalize="none"
         />
       </View>
@@ -106,7 +144,24 @@ export default function HomeScreen() {
         </Pressable>
       </Link>
 
-      {sortedRecipes?.length === 0 ? (
+      {recipeView === "favorites" && favoriteRecipes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No favorites yet</Text>
+          <Text style={styles.emptyText}>
+            Found a keeper? Open a recipe and tap Add to Favorites to save it here.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setRecipeView("all");
+              setSearch("");
+            }}
+            style={styles.importButton}
+          >
+            <Text style={styles.importButtonText}>Browse All Recipes</Text>
+          </Pressable>
+        </View>
+      ) : sortedRecipes.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No recipes yet</Text>
           <Text style={styles.emptyText}>
@@ -115,7 +170,9 @@ export default function HomeScreen() {
         </View>
       ) : filteredRecipes.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No recipes found</Text>
+          <Text style={styles.emptyTitle}>
+            {recipeView === "favorites" ? "No favorites found" : "No recipes found"}
+          </Text>
           <Text style={styles.emptyText}>Try a different search.</Text>
         </View>
       ) : (
@@ -190,6 +247,45 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
+  },
+
+  viewSelector: {
+    flexDirection: "row",
+    borderRadius: 12,
+    padding: 4,
+    backgroundColor: "#ececec",
+    gap: 4,
+  },
+
+  viewButton: {
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectedViewButton: {
+    backgroundColor: "#171717",
+  },
+
+  viewButtonText: {
+    color: "#555555",
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  selectedViewButtonText: {
+    color: "#ffffff",
+  },
+
+  viewDescription: {
+    color: "#555555",
+    fontSize: 14,
+    lineHeight: 20,
   },
 
   searchInput: {
@@ -288,5 +384,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: "#777777",
+    textAlign: "center",
   },
 });
