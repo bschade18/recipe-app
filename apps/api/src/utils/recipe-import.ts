@@ -2,6 +2,13 @@ import * as cheerio from "cheerio";
 import { lookup } from "node:dns/promises";
 import ipaddr from "ipaddr.js";
 
+export class RecipeUrlValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RecipeUrlValidationError";
+  }
+}
+
 // Decode HTML entities, replace non-breaking spaces, collapse repeated
 // whitespace, and trim the final string.
 export function cleanText(value: string) {
@@ -64,17 +71,17 @@ export async function validateRecipeUrl(value: string): Promise<URL> {
   const url = new URL(value);
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error("Only HTTP and HTTPS URLs are allowed");
+    throw new RecipeUrlValidationError("Only HTTP and HTTPS URLs are allowed");
   }
 
   if (url.username || url.password) {
-    throw new Error("URLs containing credentials are not allowed");
+    throw new RecipeUrlValidationError("Only HTTP and HTTPS URLs are allowed");
   }
 
   const hostname = url.hostname.toLowerCase();
 
   if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-    throw new Error("Local addresses are not allowed");
+    throw new RecipeUrlValidationError("Local addresses are not allowed");
   }
 
   let addresses;
@@ -85,11 +92,11 @@ export async function validateRecipeUrl(value: string): Promise<URL> {
       verbatim: true,
     });
   } catch {
-    throw new Error("Could not resolve recipe website");
+    throw new RecipeUrlValidationError("Could not resolve recipe website");
   }
 
   if (addresses.length === 0) {
-    throw new Error("Could not resolve recipe website");
+    throw new RecipeUrlValidationError("Could not resolve recipe website");
   }
 
   for (const { address } of addresses) {
@@ -103,9 +110,51 @@ export async function validateRecipeUrl(value: string): Promise<URL> {
     }
 
     if (parsedAddress.range() !== "unicast") {
-      throw new Error("Private or reserved network addresses are not allowed");
+      throw new RecipeUrlValidationError(
+        "Private or reserved network addresses are not allowed",
+      );
     }
   }
 
   return url;
+}
+
+export async function fetchRecipePage(
+  initialUrl: URL,
+  maxRedirects = 5,
+): Promise<Response> {
+  let currentUrl = initialUrl;
+
+  for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
+    const response = await fetch(currentUrl, {
+      redirect: "manual",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; RecipeApp/1.0)",
+      },
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+
+      if (!location) {
+        throw new Error("Recipe website returned an invalid redirect");
+      }
+
+      if (redirectCount === maxRedirects) {
+        throw new Error("Too many redirects");
+      }
+
+      // Handles both absolute redirects and relative ones like "/new-page".
+      const nextUrl = new URL(location, currentUrl);
+
+      // Re-run SSRF validation for every redirect destination.
+      currentUrl = await validateRecipeUrl(nextUrl.toString());
+
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("Too many redirects");
 }
